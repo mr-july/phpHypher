@@ -184,6 +184,10 @@ class phpHypher {
 				? @iconv($this->io_encoding, $this->internal_encoding, $instr)
 				: $instr;
 
+                // convert soft_hyphen to internal encoding
+                $hyphen = ($to_transcode) ? @iconv($this->io_encoding,
+                        $this->internal_encoding, $this->soft_hyphen) : $this->soft_hyphen;
+
 		// \x5C character (backslash) indicates to not process this world at all
 		if (false !== strpos($word, "\x5C"))
 			return $instr;
@@ -244,7 +248,7 @@ class phpHypher {
 		foreach (str_split($word) as $key => $val) if ( $val != '.') {
 			$ret .= $val;
 			if ($key > $ll - 1 && $key < $len - $rl - 1 && $word_mask[$key + 1] % 2)
-				$ret .= $this->soft_hyphen;
+				$ret .= $hyphen;
 		}
 
 		// convert the word back to native encoding
