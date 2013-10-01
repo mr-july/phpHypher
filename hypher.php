@@ -128,11 +128,11 @@ class phpHypher {
 						$str = str_replace('-', '9', $str);
 						$str = preg_replace('/(?<=\D)(?=\D)/', '8', $str);
 						$str = '.'. $str. '.';
-					}	
+					}
 
 					// insert zero between the letters
 					$str = preg_replace('/(?<=\D)(?=\D)/', '0', $str);
-	
+
 					// insert zero on beginning and on the end
 					if (preg_match('/^\D/', $str)) $str = '0'. $str;
 					if (preg_match('/\D$/', $str)) $str .= '0';
@@ -159,7 +159,7 @@ class phpHypher {
 				}
 			}
 
-			if (isset($conf['compiled'][0]))	
+			if (isset($conf['compiled'][0]))
 				file_put_contents($conf['compiled'][0], serialize($ret));
 		}
 
@@ -170,7 +170,7 @@ class phpHypher {
 		$this->dictionary = $ret['dict'];
 		$this->min_left_limit = $ret['ll'];
 		$this->min_right_limit = $ret['rl'];
-		
+
 		$this->check_limits();
 	}
 
@@ -221,7 +221,7 @@ class phpHypher {
 		// translate letters
 		foreach ($this->translation as $key => $val)
 			$word_lower = str_replace($key, $val, $word_lower);
-	
+
 		$word_splitted = str_split($word_lower);
 		$word_mask = str_split(str_repeat('0', $len + 1));
 
@@ -270,7 +270,7 @@ class phpHypher {
 
 	public function set_limits($left_limit = 0, $right_limit = 0, $length_limit = 0,
 	    $right_limit_last = 0, $left_limit_uc = 0) {
-    
+
 		$this->left_limit = $left_limit;
 		$this->right_limit = $right_limit;
 		$this->length_limit = $length_limit;
@@ -281,11 +281,13 @@ class phpHypher {
 	}
 
 
-	// $instr:	input string
-	// $encoding:	input/output encoding
-	// $shy:	hyphen symbol or string
+	// $instr:		input string
+	// $encoding:		input/output encoding
+	// $shy:		hyphen symbol or string
+	// $preserveTags:	if set to TRUE (default), then do not process words inside <>
 
-	public function hyphenate($instr, $encoding = '', $shy = '&shy;') {
+	public function hyphenate($instr, $encoding = '', $shy = '&shy;',
+		$preserveTags = true) {
 
 		$this->soft_hyphen = $shy;
 
@@ -299,13 +301,19 @@ class phpHypher {
 
 		$this->check_limits();
 
-		if (!preg_match_all('/(?<!['. $alph. '\x5C])(['. $alph. ']{'. $this->length_limit. ',})('.
-			(($uni) ? '\P{L}' : '[^'. $alph. '\w]'). '*[\n\r])?/'. $uni,
-			$instr, $matches, PREG_OFFSET_CAPTURE)) return $instr;
+		$pattern = $preserveTags ?
+			'/(?<![' . $alph . '\x5C])([' . $alph . ']{' .
+			$this->length_limit . ',})(?!([^<]+)?>)/' :
+			'/(?<![' . $alph . '\x5C])([' . $alph . ']{' .
+			$this->length_limit . ',})(' .
+			(($uni) ? '\P{L}' : '[^' . $alph . '\w]') . '*[\n\r])?/';
+
+		if (!preg_match_all($pattern . $uni, $instr, $matches, PREG_OFFSET_CAPTURE))
+			return $instr;
 
 		// last word in the stream should be treated as the last word of paragraph
 		$matches[2][sizeof($matches[1]) - 1][0] = '1';
-		
+
 		$offset = 0;
 		$this->io_encoding = $encoding;
 
